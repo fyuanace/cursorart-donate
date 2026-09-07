@@ -39,11 +39,18 @@ export const bumpCount = async (db: D1Database) => {
 		)
 		.bind(LIKES_BASELINE, LIKES_BASELINE + 1)
 		.first<{ clicks: number }>();
+	await db.prepare("INSERT INTO like_events (created_at) VALUES (?)").bind(Date.now()).run();
 	return Number(row?.clicks) || LIKES_BASELINE + 1;
 };
 
-export const renderPage = (count: number) => {
+export const readEvents = async (db: D1Database) => {
+	const rows = await db.prepare("SELECT created_at FROM like_events ORDER BY created_at ASC").all<{ created_at: number }>();
+	return (rows.results || []).map((row) => Number(row.created_at)).filter((t) => Number.isFinite(t));
+};
+
+export const renderPage = (count: number, events: number[]) => {
 	const n = escapeHtml(count.toLocaleString("zh-CN"));
+	const history = JSON.stringify({ total: count, events });
 	return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -190,6 +197,67 @@ export const renderPage = (count: number) => {
       border: 1px solid color-mix(in srgb, var(--heart) 22%, var(--line));
       border-radius: 10px;
     }
+    .chart-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .chart-head h2 { margin: 0; }
+    .range-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .range-pills button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .range-pills button[aria-selected="true"] {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--paper);
+    }
+    .chart-frame {
+      position: relative;
+    }
+    .chart-frame svg {
+      width: 100%;
+      height: 220px;
+      display: block;
+      overflow: visible;
+    }
+    .chart-grid { stroke: var(--line); stroke-width: 1; }
+    .chart-area { fill: color-mix(in srgb, var(--heart) 16%, transparent); }
+    .chart-line { fill: none; stroke: var(--heart); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .chart-axis { fill: var(--muted); font-size: 11px; }
+    .chart-cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+    .chart-dot { fill: var(--heart); stroke: var(--paper); stroke-width: 2; }
+    .chart-tip {
+      position: absolute;
+      z-index: 1;
+      min-width: 108px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 10px));
+    }
+    .chart-tip strong { color: var(--heart); }
   </style>
 </head>
 <body>
@@ -228,7 +296,25 @@ export const renderPage = (count: number) => {
         <img src="/qq-group.png" width="835" height="1024" alt="QQ 群 ${QQ_GROUP} 二维码">
       </div>
     </section>
+    <section class="history" data-star-chart>
+      <div class="chart-head">
+        <h2>增长曲线</h2>
+        <div class="range-pills" role="tablist" aria-label="时间范围">
+          <button type="button" role="tab" data-range="7d">1 周</button>
+          <button type="button" role="tab" data-range="30d" aria-selected="true">1 月</button>
+          <button type="button" role="tab" data-range="180d">半年</button>
+          <button type="button" role="tab" data-range="365d">1 年</button>
+          <button type="button" role="tab" data-range="all">全部</button>
+        </div>
+      </div>
+      <div class="chart-frame">
+        <svg viewBox="0 0 640 220" role="img" aria-label="增长曲线"></svg>
+        <div class="chart-tip" hidden></div>
+      </div>
+      <script type="application/json" id="like-history">${history}</script>
+    </section>
   </main>
+  <script src="/star-chart.js?v=4" defer></script>
 </body>
 </html>`;
 };

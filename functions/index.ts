@@ -1,11 +1,12 @@
-import { bumpCount, Env, readCount, renderPage } from "./_lib";
+import { bumpCount, Env, readCount, readEvents, renderPage } from "./_lib";
 
 const pageResponse = async (context: EventContext<Env, any, Record<string, unknown>>) => {
 	const url = new URL(context.request.url);
 	const fromTheme = url.searchParams.get("from") === "theme";
 	const isGet = context.request.method === "GET";
 	const count = isGet && fromTheme ? await bumpCount(context.env.DB) : await readCount(context.env.DB);
-	const html = renderPage(count);
+	const events = await readEvents(context.env.DB);
+	const html = renderPage(count, events);
 	const body =
 		fromTheme && isGet
 			? html.replace(
