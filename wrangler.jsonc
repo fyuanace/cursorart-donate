@@ -1,0 +1,15 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "cursorart-donate",
+	"compatibility_date": "2026-09-04",
+	"compatibility_flags": ["nodejs_compat"],
+	"pages_build_output_dir": "./public",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "cursorart-likes",
+			"database_id": "affb3152-f77d-4f97-9b82-7cf4cde47f30",
+			"migrations_dir": "./migrations"
+		}
+	]
+}

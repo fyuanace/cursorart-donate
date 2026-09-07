@@ -1,0 +1,12 @@
+{
+	"name": "cursorart-donate",
+	"private": true,
+	"scripts": {
+		"dev": "wrangler pages dev",
+		"deploy": "wrangler pages deploy",
+		"types": "wrangler types"
+	},
+	"devDependencies": {
+		"wrangler": "^4.129.0"
+	}
+}
